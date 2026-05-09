@@ -1,0 +1,117 @@
+services:
+  app:
+    build:
+      context: ./app
+      args:
+        DOCKER_UID: ${DOCKER_UID:-1000}
+        DOCKER_GID: ${DOCKER_GID:-1000}
+    container_name: premind-app
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-28000}:80"
+      - "${APP_HTTPS_PORT:-28443}:443"
+    volumes:
+      - ../backend:/var/www/html
+      - composer_cache:/root/.composer/cache
+      - ./certs:/etc/nginx/certs
+    environment:
+      DB_CONNECTION: mysql
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_DATABASE: ${DB_DATABASE:-premind}
+      DB_USERNAME: ${DB_USERNAME:-premind}
+      DB_PASSWORD: ${DB_PASSWORD:-premind_dev_password}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CACHE_STORE: redis
+      QUEUE_CONNECTION: redis
+      SESSION_DRIVER: redis
+      MAIL_MAILER: smtp
+      MAIL_HOST: mailpit
+      MAIL_PORT: 1025
+      MAIL_FROM_ADDRESS: noreply@premind.local
+      MAIL_FROM_NAME: Premind
+      RUN_SEED: ${RUN_SEED:-true}
+      APP_URL: https://localhost:${APP_HTTPS_PORT:-28443}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - premind
+
+  mysql:
+    image: mysql:8
+    container_name: premind-mysql
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-23306}:3306"
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-premind}
+      MYSQL_USER: ${DB_USERNAME:-premind}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-premind_dev_password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_dev_password}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/my.cnf:/etc/mysql/conf.d/custom.cnf:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "--silent"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 30s
+    networks:
+      - premind
+
+  redis:
+    image: redis:7-alpine
+    container_name: premind-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-26379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - premind
+
+  frontend:
+    build: ./frontend
+    container_name: premind-frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-25173}:5173"
+    volumes:
+      - ../frontend:/app
+      - frontend_node_modules:/app/node_modules
+      - ./certs:/app/certs:ro
+    environment:
+      VITE_API_URL: https://localhost:${APP_HTTPS_PORT:-28443}/api/v1
+      VITE_HTTPS: ${VITE_HTTPS:-true}
+    networks:
+      - premind
+
+  mailpit:
+    image: axllent/mailpit
+    container_name: premind-mailpit
+    restart: unless-stopped
+    ports:
+      - "${MAIL_UI_PORT:-28025}:8025"
+      - "${MAIL_SMTP_PORT:-21025}:1025"
+    networks:
+      - premind
+
+volumes:
+  mysql_data:
+  redis_data:
+  composer_cache:
+  frontend_node_modules:
+
+networks:
+  premind:
+    driver: bridge
