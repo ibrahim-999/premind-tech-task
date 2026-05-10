@@ -1,6 +1,6 @@
 <?php
 
-use App\Workflow\Enums\StepInstanceStatus;
+use App\Domains\Workflow\Enums\StepInstanceStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;

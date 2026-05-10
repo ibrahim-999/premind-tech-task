@@ -2,8 +2,8 @@
 
 namespace Tests\Support;
 
-use App\Models\User;
-use App\Workflow\Contracts\Approvable;
+use App\Domains\User\Models\User;
+use App\Domains\Workflow\Contracts\Approvable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
