@@ -21,12 +21,13 @@ interface FieldProps {
   label: string
   error?: string
   htmlFor?: string
+  className?: string
   children: React.ReactNode
 }
 
-export function Field({ label, error, htmlFor, children }: FieldProps) {
+export function Field({ label, error, htmlFor, className, children }: FieldProps) {
   return (
-    <div className="space-y-1">
+    <div className={cn('space-y-1', className)}>
       <label htmlFor={htmlFor} className="block text-sm font-medium text-gray-700">
         {label}
       </label>

@@ -6,6 +6,11 @@ import { PurchaseOrderCreatePage } from '@/features/purchase-orders/PurchaseOrde
 import { PurchaseOrderDetailPage } from '@/features/purchase-orders/PurchaseOrderDetailPage'
 import { PurchaseOrderEditPage } from '@/features/purchase-orders/PurchaseOrderEditPage'
 import { PurchaseOrderListPage } from '@/features/purchase-orders/PurchaseOrderListPage'
+import { NewWorkflowPage } from '@/features/workflows/NewWorkflowPage'
+import { WorkflowDetailPage } from '@/features/workflows/WorkflowDetailPage'
+import { WorkflowListPage } from '@/features/workflows/WorkflowListPage'
+import { WorkflowVersionEditPage } from '@/features/workflows/WorkflowVersionEditPage'
+import { WorkflowVersionViewPage } from '@/features/workflows/WorkflowVersionViewPage'
 import { AppLayout } from './AppLayout'
 import { RequireAdmin, RequireAuth } from './guards'
 
@@ -37,14 +42,48 @@ export function AppRoutes() {
         <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailPage />} />
         <Route path="/purchase-orders/:id/edit" element={<PurchaseOrderEditPage />} />
         <Route path="/processes/:id" element={<ProcessDetailPage />} />
+
         <Route
           path="/admin/workflows"
           element={
             <RequireAdmin>
-              <PlaceholderPage title="Workflows (admin)" />
+              <WorkflowListPage />
             </RequireAdmin>
           }
         />
+        <Route
+          path="/admin/workflows/new"
+          element={
+            <RequireAdmin>
+              <NewWorkflowPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/workflows/:id"
+          element={
+            <RequireAdmin>
+              <WorkflowDetailPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/workflows/:workflowId/versions/new"
+          element={
+            <RequireAdmin>
+              <WorkflowVersionEditPage />
+            </RequireAdmin>
+          }
+        />
+        <Route
+          path="/admin/workflow-versions/:id"
+          element={
+            <RequireAdmin>
+              <WorkflowVersionViewPage />
+            </RequireAdmin>
+          }
+        />
+
         <Route path="*" element={<PlaceholderPage title="Not Found" />} />
       </Route>
     </Routes>
