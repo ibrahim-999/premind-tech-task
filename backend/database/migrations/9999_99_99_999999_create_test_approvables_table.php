@@ -1,15 +1,14 @@
 <?php
 
-namespace Tests\Support;
-
+use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-trait CreatesTestApprovableTable
+return new class extends Migration
 {
-    protected function createTestApprovableTable(): void
+    public function up(): void
     {
-        if (Schema::hasTable('test_approvables')) {
+        if (! app()->environment('testing')) {
             return;
         }
 
@@ -23,4 +22,13 @@ trait CreatesTestApprovableTable
             $table->timestamps();
         });
     }
-}
+
+    public function down(): void
+    {
+        if (! app()->environment('testing')) {
+            return;
+        }
+
+        Schema::dropIfExists('test_approvables');
+    }
+};
