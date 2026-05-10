@@ -1,4 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { InboxPage } from '@/features/approvals/InboxPage'
+import { ProcessDetailPage } from '@/features/approvals/ProcessDetailPage'
 import { LoginPage } from '@/features/auth/LoginPage'
 import { PurchaseOrderCreatePage } from '@/features/purchase-orders/PurchaseOrderCreatePage'
 import { PurchaseOrderDetailPage } from '@/features/purchase-orders/PurchaseOrderDetailPage'
@@ -29,12 +31,12 @@ export function AppRoutes() {
         }
       >
         <Route path="/" element={<Navigate to="/inbox" replace />} />
-        <Route path="/inbox" element={<PlaceholderPage title="Inbox" />} />
+        <Route path="/inbox" element={<InboxPage />} />
         <Route path="/purchase-orders" element={<PurchaseOrderListPage />} />
         <Route path="/purchase-orders/new" element={<PurchaseOrderCreatePage />} />
         <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailPage />} />
         <Route path="/purchase-orders/:id/edit" element={<PurchaseOrderEditPage />} />
-        <Route path="/processes/:id" element={<PlaceholderPage title="Process Detail" />} />
+        <Route path="/processes/:id" element={<ProcessDetailPage />} />
         <Route
           path="/admin/workflows"
           element={
