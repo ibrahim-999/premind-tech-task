@@ -1,6 +1,6 @@
 # Premind Backend — Purchase Order Approval Engine
 
-A configurable approval engine where the workflow lives in **data, not in `if`-statements**. Laravel 11 + MySQL 8 + Redis. Drop-in usable for Purchase Orders today; reusable for any entity that implements one interface (`Approvable`).
+A configurable approval engine where the workflow lives in **data, not in `if`-statements**. Laravel 12 + MySQL 8 + Redis. Drop-in usable for Purchase Orders today; reusable for any entity that implements one interface (`Approvable`).
 
 ## Quick Start
 
