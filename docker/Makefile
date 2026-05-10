@@ -16,9 +16,9 @@ help:
 	@echo "  make shell      open bash in app container"
 	@echo "  make tinker     open Laravel tinker"
 	@echo "  make artisan c='cmd'   run arbitrary artisan command"
-	@echo "  make migrate    run migrations"
-	@echo "  make fresh      drop and re-run migrations with seeders"
-	@echo "  make seed       run seeders only"
+	@echo "  make migrate    run pending migrations"
+	@echo "  make fresh      drop all tables and re-run migrations + seeders"
+	@echo "  make seed       run seeders only (idempotent — safe to repeat)"
 	@echo ""
 	@echo "  make test       run backend tests"
 	@echo "  make typecheck  run frontend type check"
@@ -58,13 +58,13 @@ artisan:
 	$(DC) exec app php artisan $(c)
 
 migrate:
-	$(DC) exec app php artisan migrate
+	$(DC) exec app php artisan migrate --force
 
 fresh:
-	$(DC) exec app php artisan migrate:fresh --seed
+	$(DC) exec app php artisan migrate:fresh --seed --force
 
 seed:
-	$(DC) exec app php artisan db:seed
+	$(DC) exec app php artisan db:seed --force
 
 test:
 	$(DC) exec app php artisan test --parallel

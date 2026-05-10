@@ -54,14 +54,12 @@ if [ -f artisan ] && [ -f .env ]; then
         fi
     fi
 
-    if [ ! -f /tmp/migrations_done ]; then
-        echo "[entrypoint] running migrations"
-        php artisan migrate --force --no-interaction || true
-        if [ "${RUN_SEED:-false}" = "true" ]; then
-            echo "[entrypoint] running seeders"
-            php artisan db:seed --force --no-interaction || true
-        fi
-        touch /tmp/migrations_done
+    echo "[entrypoint] running migrations (idempotent)"
+    php artisan migrate --force --no-interaction || true
+
+    if [ "${RUN_SEED:-false}" = "true" ]; then
+        echo "[entrypoint] running seeders (idempotent)"
+        php artisan db:seed --force --no-interaction || true
     fi
 fi
 
