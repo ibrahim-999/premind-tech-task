@@ -1,4 +1,5 @@
 import { cn } from '@/shared/utils/cn'
+import { formatDate } from '@/shared/utils/format'
 import type { AuditLogEntry } from '../types'
 
 const labelFor: Record<string, string> = {
@@ -14,22 +15,35 @@ const labelFor: Record<string, string> = {
   step_injected: 'Ad-hoc step injected',
 }
 
-function eventTone(eventType: string): string {
-  if (eventType === 'process_approved') return 'text-green-700'
-  if (eventType === 'process_rejected' || eventType === 'process_cancelled') return 'text-red-700'
-  if (eventType === 'no_approvers_available') return 'text-amber-700'
-  if (eventType === 'action_recorded') return 'text-blue-700'
-  return 'text-gray-700'
+function dotClass(eventType: string): string {
+  if (eventType === 'process_approved' || eventType === 'step_completed') {
+    return 'bg-emerald-500'
+  }
+  if (eventType === 'process_rejected' || eventType === 'process_cancelled') {
+    return 'bg-red-500'
+  }
+  if (eventType === 'no_approvers_available') return 'bg-amber-500'
+  if (eventType === 'action_recorded') return 'bg-brand-500'
+  if (eventType === 'step_injected') return 'bg-violet-500'
+  if (eventType === 'step_skipped') return 'bg-gray-300'
+  return 'bg-gray-400'
 }
 
 function describePayload(eventType: string, payload: Record<string, unknown> | null): string {
   if (payload === null) return ''
   if (eventType === 'action_recorded') {
     const action = String(payload.action ?? '')
-    const comment = payload.comment !== null && payload.comment !== '' ? ` — "${String(payload.comment)}"` : ''
+    const comment =
+      payload.comment !== null && payload.comment !== ''
+        ? ` — "${String(payload.comment)}"`
+        : ''
     return `${action}${comment}`
   }
-  if (eventType === 'step_entered' || eventType === 'step_completed' || eventType === 'step_skipped') {
+  if (
+    eventType === 'step_entered' ||
+    eventType === 'step_completed' ||
+    eventType === 'step_skipped'
+  ) {
     return String(payload.step_name ?? '')
   }
   if (eventType === 'process_rejected' || eventType === 'process_cancelled') {
@@ -41,31 +55,44 @@ function describePayload(eventType: string, payload: Record<string, unknown> | n
   return ''
 }
 
-function formatDate(iso: string | null): string {
-  if (iso === null) return ''
-  return new Date(iso).toLocaleString()
-}
-
 export function AuditTimeline({ entries }: { entries: AuditLogEntry[] }) {
   if (entries.length === 0) {
     return <p className="text-sm text-gray-500">No events yet.</p>
   }
 
   return (
-    <ol className="space-y-2 border-l border-gray-200 pl-4">
-      {entries.map((entry) => {
+    <ol className="relative">
+      {entries.map((entry, idx) => {
         const label = labelFor[entry.event_type] ?? entry.event_type
         const detail = describePayload(entry.event_type, entry.payload)
+        const isLast = idx === entries.length - 1
         return (
-          <li key={entry.id} className="text-xs text-gray-700">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className={cn('font-medium', eventTone(entry.event_type))}>{label}</span>
-              <span className="text-gray-400">{formatDate(entry.occurred_at)}</span>
-            </div>
-            {detail !== '' ? <p className="text-gray-600">{detail}</p> : null}
-            {entry.actor !== null && entry.actor !== undefined ? (
-              <p className="text-gray-400">by {entry.actor.name}</p>
+          <li key={entry.id} className="relative flex gap-3 pb-4 last:pb-0">
+            {!isLast ? (
+              <span
+                aria-hidden
+                className="absolute left-1.5 top-3 h-full w-px bg-gray-200"
+              />
             ) : null}
+            <span
+              className={cn(
+                'relative mt-1.5 h-3 w-3 shrink-0 rounded-full ring-4 ring-white',
+                dotClass(entry.event_type),
+              )}
+              aria-hidden
+            />
+            <div className="min-w-0 flex-1">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-xs font-medium text-gray-900">{label}</span>
+                <span className="text-[11px] text-gray-400">
+                  {formatDate(entry.occurred_at)}
+                </span>
+              </div>
+              {detail !== '' ? <p className="text-xs text-gray-600">{detail}</p> : null}
+              {entry.actor !== null && entry.actor !== undefined ? (
+                <p className="text-[11px] text-gray-400">by {entry.actor.name}</p>
+              ) : null}
+            </div>
           </li>
         )
       })}

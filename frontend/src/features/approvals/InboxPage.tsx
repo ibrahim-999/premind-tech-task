@@ -1,19 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
+import { ArrowRight, Inbox } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { Avatar } from '@/shared/components/Avatar'
 import { Badge } from '@/shared/components/Badge'
 import { Card, CardBody } from '@/shared/components/Card'
+import { EmptyState } from '@/shared/components/EmptyState'
+import { Skeleton } from '@/shared/components/Skeleton'
+import { formatCurrency, formatRelative } from '@/shared/utils/format'
 import { getInbox } from './api'
 import type { InboxItem } from './types'
-
-function formatCurrency(n: number | undefined): string {
-  if (n === undefined) return '—'
-  return n.toLocaleString(undefined, { style: 'currency', currency: 'USD' })
-}
-
-function formatDate(iso: string | null): string {
-  if (iso === null) return ''
-  return new Date(iso).toLocaleString()
-}
 
 export function InboxPage() {
   const { data, isLoading, isError } = useQuery({
@@ -24,19 +19,33 @@ export function InboxPage() {
 
   return (
     <div className="mx-auto max-w-5xl p-6">
-      <div className="mb-4 flex items-baseline justify-between">
-        <h1 className="text-xl font-semibold text-gray-900">Inbox</h1>
-        <p className="text-sm text-gray-600">
-          Approvals waiting on you.
-        </p>
-      </div>
+      <header className="mb-6 flex items-baseline justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-gray-900">Inbox</h1>
+          <p className="mt-1 text-sm text-gray-600">Approvals waiting on you.</p>
+        </div>
+        {data !== undefined && data.data.length > 0 ? (
+          <Badge tone="amber">{data.data.length} pending</Badge>
+        ) : null}
+      </header>
 
       {isLoading ? (
-        <Card>
-          <CardBody>
-            <p className="text-sm text-gray-500">Loading…</p>
-          </CardBody>
-        </Card>
+        <ul className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <li key={i}>
+              <Card>
+                <CardBody className="flex items-center gap-4">
+                  <Skeleton className="h-9 w-9 rounded-full" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-3 w-1/2" />
+                    <Skeleton className="h-3 w-1/3" />
+                  </div>
+                  <Skeleton className="h-5 w-20" />
+                </CardBody>
+              </Card>
+            </li>
+          ))}
+        </ul>
       ) : isError ? (
         <Card>
           <CardBody>
@@ -45,11 +54,11 @@ export function InboxPage() {
         </Card>
       ) : (data?.data ?? []).length === 0 ? (
         <Card>
-          <CardBody>
-            <p className="text-sm text-gray-500">
-              Nothing pending your approval right now.
-            </p>
-          </CardBody>
+          <EmptyState
+            icon={<Inbox size={20} />}
+            title="Nothing pending your approval"
+            description="You're all caught up. New approval requests will appear here."
+          />
         </Card>
       ) : (
         <ul className="space-y-3">
@@ -63,30 +72,39 @@ export function InboxPage() {
 }
 
 function InboxRow({ item }: { item: InboxItem }) {
+  const submitterName = item.submitted_by?.name ?? 'unknown'
+
   return (
     <li>
-      <Link to={`/processes/${String(item.process_id)}`} className="block">
-        <Card className="transition-shadow hover:shadow-md">
+      <Link to={`/processes/${String(item.process_id)}`} className="group block">
+        <Card className="transition-all hover:border-brand-200 hover:shadow-md">
           <CardBody>
-            <div className="flex items-start justify-between gap-4">
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
+              <Avatar name={submitterName} size="md" />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
                   <h2 className="truncate text-sm font-semibold text-gray-900">
                     {item.subject?.title ?? 'Untitled'}
                   </h2>
                   <Badge tone="amber">{item.step_name}</Badge>
+                  {item.subject?.category !== undefined ? (
+                    <Badge tone="gray">{item.subject.category}</Badge>
+                  ) : null}
                 </div>
                 <p className="mt-1 text-xs text-gray-500">
-                  {item.subject?.category !== undefined ? `${item.subject.category} · ` : ''}
-                  {item.submitted_by !== null ? `from ${item.submitted_by.name}` : ''}
-                  {item.submitted_at !== null ? ` · submitted ${formatDate(item.submitted_at)}` : ''}
+                  from <span className="font-medium text-gray-700">{submitterName}</span>
+                  {item.submitted_at !== null ? (
+                    <span> · submitted {formatRelative(item.submitted_at)}</span>
+                  ) : null}
                 </p>
               </div>
-              <div className="text-right">
-                <div className="text-base font-semibold text-gray-900 tabular-nums">
+              <div className="flex flex-col items-end gap-1">
+                <span className="text-base font-semibold tabular-nums text-gray-900">
                   {formatCurrency(item.subject?.amount)}
-                </div>
-                <div className="mt-1 text-xs text-blue-600">Review →</div>
+                </span>
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 transition-transform group-hover:translate-x-0.5">
+                  Review <ArrowRight size={12} />
+                </span>
               </div>
             </div>
           </CardBody>
