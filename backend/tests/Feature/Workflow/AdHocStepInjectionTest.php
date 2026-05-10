@@ -5,8 +5,10 @@ namespace Tests\Feature\Workflow;
 use App\Domains\User\Models\User;
 use App\Domains\Workflow\Approvers\Resolvers\DirectManagerResolver;
 use App\Domains\Workflow\Enums\ActionType;
+use App\Domains\Workflow\Enums\ProcessStatus;
 use App\Domains\Workflow\Enums\StepInstanceStatus;
 use App\Domains\Workflow\Exceptions\InvalidActionState;
+use App\Domains\Workflow\Models\ApprovalStepInstance;
 use Illuminate\Support\Str;
 use Tests\Support\EngineTestCase;
 use Tests\Support\TestApprovable;
@@ -100,6 +102,76 @@ class AdHocStepInjectionTest extends EngineTestCase
         $this->assertSame($reviewer->id, (int) $action->user_id);
         $this->assertSame(ActionType::Approve, $action->action);
         $this->assertSame('looks fine', $action->comment);
+    }
+
+    public function test_workflow_completion_waits_for_pending_adhoc_step(): void
+    {
+        WorkflowFactory::for(TestApprovable::class)
+            ->step('Manager')->approvedBy(DirectManagerResolver::class)
+            ->publish();
+
+        $manager = User::factory()->create();
+        $submitter = User::factory()->create(['manager_id' => $manager->id]);
+        $admin = User::factory()->create();
+        $reviewer = User::factory()->create();
+
+        $process = $this->engine->start($this->makeApprovable(submitter: $submitter));
+        $managerStep = $process->fresh()->currentStepInstance;
+
+        $injected = $this->engine->injectAdHocStep(
+            $process,
+            $admin,
+            'Legal review',
+            'specific_user',
+            ['user_id' => $reviewer->id],
+            'requested by CFO',
+        );
+
+        $this->engine->submitAction($managerStep, $manager, ActionType::Approve, null, (string) Str::uuid());
+        $this->assertSame(ProcessStatus::Pending, $process->fresh()->status);
+        $this->assertSame(StepInstanceStatus::Pending, $injected->fresh()->status);
+        $this->assertSame($injected->id, (int) $process->fresh()->current_step_instance_id);
+
+        $this->engine->submitAction($injected, $reviewer, ActionType::Approve, null, (string) Str::uuid());
+
+        $this->assertSame(StepInstanceStatus::Approved, $injected->fresh()->status);
+        $this->assertSame(ProcessStatus::Approved, $process->fresh()->status);
+    }
+
+    public function test_adhoc_approved_first_does_not_duplicate_workflow_step(): void
+    {
+        WorkflowFactory::for(TestApprovable::class)
+            ->step('Manager')->approvedBy(DirectManagerResolver::class)
+            ->publish();
+
+        $manager = User::factory()->create();
+        $submitter = User::factory()->create(['manager_id' => $manager->id]);
+        $admin = User::factory()->create();
+        $reviewer = User::factory()->create();
+
+        $process = $this->engine->start($this->makeApprovable(submitter: $submitter));
+        $managerStep = $process->fresh()->currentStepInstance;
+
+        $injected = $this->engine->injectAdHocStep(
+            $process,
+            $admin,
+            'Quick check',
+            'specific_user',
+            ['user_id' => $reviewer->id],
+            'context',
+        );
+
+        $this->engine->submitAction($injected, $reviewer, ActionType::Approve, null, (string) Str::uuid());
+
+        $managerInstances = ApprovalStepInstance::where('approval_process_id', $process->id)
+            ->whereNotNull('workflow_step_id')
+            ->get();
+        $this->assertCount(1, $managerInstances);
+        $this->assertSame(StepInstanceStatus::Pending, $managerInstances->first()->status);
+        $this->assertSame(ProcessStatus::Pending, $process->fresh()->status);
+
+        $this->engine->submitAction($managerStep, $manager, ActionType::Approve, null, (string) Str::uuid());
+        $this->assertSame(ProcessStatus::Approved, $process->fresh()->status);
     }
 
     public function test_inject_throws_when_process_is_not_pending(): void

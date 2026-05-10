@@ -103,6 +103,11 @@ class EngineStartTest extends EngineTestCase
         $process = $this->engine->start($subject);
 
         $this->assertSame(ProcessStatus::Approved, $process->fresh()->status);
-        $this->assertCount(0, ApprovalStepInstance::where('approval_process_id', $process->id)->get());
+        $this->assertCount(
+            0,
+            ApprovalStepInstance::where('approval_process_id', $process->id)
+                ->where('status', StepInstanceStatus::Pending->value)
+                ->get(),
+        );
     }
 }

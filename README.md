@@ -47,7 +47,7 @@ This is summarized concisely below; each sub-README has the full breakdown.
 - Optimistic locking via `lock_version`
 - Ad-hoc step injection and cancel-and-restart admin escape hatches
 - Notifications (mail + database, queued, after-commit)
-- 140 backend tests covering the engine, all three PDF scenarios end-to-end, notifications, and auth
+- 142 backend tests covering the engine, all three PDF scenarios end-to-end, notifications, and auth
 - Full React UI: login, inbox, PO list/create/edit/detail, process detail with step + audit timelines, approve/reject with idempotency keys
 - Docker stack with custom ports, HTTPS, supervisor-managed queue worker, Mailpit
 

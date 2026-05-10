@@ -65,7 +65,7 @@ class WorkflowEngine
 
             ProcessStarted::dispatch($process, $subject);
 
-            $this->advance($process, $subject);
+            $this->advanceProcess($process, $subject);
 
             return $process->refresh();
         });
@@ -220,10 +220,22 @@ class WorkflowEngine
         });
     }
 
-    private function advance(ApprovalProcess $process, Approvable $subject): void
+    private function advanceProcess(ApprovalProcess $process, Approvable $subject): void
     {
-        foreach ($process->version->steps as $step) {
+        $consumedStepIds = ApprovalStepInstance::query()
+            ->where('approval_process_id', $process->id)
+            ->whereNotNull('workflow_step_id')
+            ->pluck('workflow_step_id')
+            ->all();
+
+        $candidateSteps = $process->version->steps()
+            ->whereNotIn('id', $consumedStepIds)
+            ->orderBy('order')
+            ->get();
+
+        foreach ($candidateSteps as $step) {
             if (! $this->evaluator->shouldApply($step, $subject)) {
+                $this->createSkippedStepInstance($process, $step);
                 StepSkipped::dispatch($process, $step);
                 continue;
             }
@@ -239,6 +251,17 @@ class WorkflowEngine
                 NoApproversAvailable::dispatch($stepInstance);
             }
 
+            return;
+        }
+
+        $pending = ApprovalStepInstance::query()
+            ->where('approval_process_id', $process->id)
+            ->where('status', StepInstanceStatus::Pending->value)
+            ->orderBy('id')
+            ->first();
+
+        if ($pending !== null) {
+            $process->update(['current_step_instance_id' => $pending->id]);
             return;
         }
 
@@ -267,43 +290,18 @@ class WorkflowEngine
         $this->finalizeStep($stepInstance, StepInstanceStatus::Approved);
 
         $subject = $this->loadSubject($process);
-
-        if ($stepInstance->isAdHoc()) {
-            $this->advance($process, $subject);
-            return;
-        }
-
-        $this->advanceFromStep($process, $stepInstance->step, $subject);
+        $this->advanceProcess($process, $subject);
     }
 
-    private function advanceFromStep(ApprovalProcess $process, WorkflowStep $completedStep, Approvable $subject): void
+    private function createSkippedStepInstance(ApprovalProcess $process, WorkflowStep $step): ApprovalStepInstance
     {
-        $remaining = $process->version->steps()
-            ->where('order', '>', $completedStep->order)
-            ->orderBy('order')
-            ->get();
-
-        foreach ($remaining as $step) {
-            if (! $this->evaluator->shouldApply($step, $subject)) {
-                StepSkipped::dispatch($process, $step);
-                continue;
-            }
-
-            $stepInstance = $this->createStepInstance($process, $step);
-            $assignees = $this->evaluator->resolveAssigneesForStep($step, $subject);
-            $this->materializeAssignees($stepInstance, $assignees);
-
-            $process->update(['current_step_instance_id' => $stepInstance->id]);
-            StepEntered::dispatch($stepInstance);
-
-            if ($assignees->isEmpty()) {
-                NoApproversAvailable::dispatch($stepInstance);
-            }
-
-            return;
-        }
-
-        $this->finalizeProcess($process, ProcessStatus::Approved);
+        return ApprovalStepInstance::create([
+            'approval_process_id' => $process->id,
+            'workflow_step_id' => $step->id,
+            'status' => StepInstanceStatus::Skipped,
+            'started_at' => now(),
+            'completed_at' => now(),
+        ]);
     }
 
     private function createStepInstance(ApprovalProcess $process, WorkflowStep $step): ApprovalStepInstance

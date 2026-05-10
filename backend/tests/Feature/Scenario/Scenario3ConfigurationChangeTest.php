@@ -8,6 +8,7 @@ use App\Domains\User\Models\User;
 use App\Domains\Workflow\Approvers\Resolvers\DirectManagerResolver;
 use App\Domains\Workflow\Approvers\Resolvers\RoleResolver;
 use App\Domains\Workflow\Enums\ProcessStatus;
+use App\Domains\Workflow\Enums\StepInstanceStatus;
 use Tests\Support\ScenarioTestCase;
 use Tests\Support\WorkflowFactory;
 
@@ -105,8 +106,11 @@ class Scenario3ConfigurationChangeTest extends ScenarioTestCase
         $this->postJsonAs($karim, "/api/v1/approvals/step-instances/{$process->fresh()->current_step_instance_id}/approve")->assertOk();
 
         $this->assertSame(ProcessStatus::Approved, $process->fresh()->status);
-        $stepNames = $process->fresh()->stepInstances->pluck('step.name')->all();
-        $this->assertNotContains('CFO Approval', $stepNames);
+        $cfoInstance = $process->fresh()->stepInstances->first(
+            fn ($i) => $i->step?->name === 'CFO Approval',
+        );
+        $this->assertNotNull($cfoInstance);
+        $this->assertSame(StepInstanceStatus::Skipped, $cfoInstance->status);
     }
 
     /** @return array{0: User, 1: User, 2: User, 3: User} */

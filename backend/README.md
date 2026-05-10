@@ -8,7 +8,7 @@ With Docker: from the `docker/` folder, copy `.env.example` to `.env`, run `make
 
 Without Docker: install Composer dependencies, copy `.env.example`, generate `APP_KEY` and `JWT_SECRET`, point DB/Redis at your services, run `migrate --seed`, run `serve`, and start a queue worker on the redis connection so notifications dispatch.
 
-Run the suite with `php artisan test` — **140 passing tests in ~3 seconds**.
+Run the suite with `php artisan test` — **142 passing tests in ~4 seconds**.
 
 ## Seeded Demo Credentials
 
@@ -120,10 +120,10 @@ Every state-changing POST requires `Idempotency-Key`. Two layers of dedup: a mid
 | Audit log (10 event types, atomic)                    | shipped       | Sync inside engine txn                                                     |
 | Idempotency middleware + DB UNIQUE                    | shipped       | Two-layer dedup                                                            |
 | Optimistic locking via `lock_version`                 | shipped       | Bumped on finalize and cancel                                              |
-| Ad-hoc step injection                                 | shipped (caveat) | See Known Issues                                                          |
+| Ad-hoc step injection                                 | shipped       | Pending instances gate process finalization                                |
 | Cancel-and-restart                                    | shipped       | Admin endpoint                                                             |
 | Notifications (mail + database, queued, after-commit) | shipped       | Three notification classes                                                 |
-| 140-test suite                                        | shipped       | Engine, scenarios, notifications, auth                                     |
+| 142-test suite                                        | shipped       | Engine, scenarios, notifications, auth                                     |
 | Frontend                                              | not built     | Vite scaffold only                                                         |
 | Workflow-builder UI                                   | deferred      | API supports it; UI deferred                                               |
 | Delegation (approver-on-leave)                        | deferred      | Schema-ready: `approval_step_assignees.delegated_to_user_id`               |
@@ -203,11 +203,10 @@ The PDF asks that anything cut for time be described well enough that the thinki
 
 ## Known Issues
 
-1. **Ad-hoc step injection ordering bug.** When an ad-hoc step is injected mid-flight and the workflow's last regular step then approves, `WorkflowEngine::advanceFromStep` finalizes the process as Approved without checking for pending ad-hoc step instances; the ad-hoc step is orphaned. Fix: before `finalizeProcess`, also check for pending ad-hoc instances.
-2. **`approval_processes` lacks a unique partial index** on `(subject_type, subject_id) WHERE status='pending'`. Engine compensates with `lockForUpdate`; DB-level guard is a small follow-up.
-3. **`approval_step_instances` lacks a CHECK constraint** asserting one of `workflow_step_id IS NOT NULL` or all `ad_hoc_*` columns populated. Soft-enforced today via `isAdHoc()`.
-4. **Test environment env-var leakage.** Laravel's Dotenv overrides phpunit.xml's `<env>` block; `CACHE_STORE`, `QUEUE_CONNECTION`, etc. resolve to redis in tests. Two test files work around it by overriding `cache.default` to `array` in setUp. Proper fix is a `.env.testing` file.
-5. **`LoginTest::setUp` clears the wrong rate-limit key** (`login:127.0.0.1` ≠ Laravel's actual key format). Tests pass on a clean Redis but flake when state accumulates. Fixing item 4 makes this go away.
+1. **`approval_processes` lacks a unique partial index** on `(subject_type, subject_id) WHERE status='pending'`. Engine compensates with `lockForUpdate`; DB-level guard is a small follow-up.
+2. **`approval_step_instances` lacks a CHECK constraint** asserting one of `workflow_step_id IS NOT NULL` or all `ad_hoc_*` columns populated. Soft-enforced today via `isAdHoc()`.
+3. **Test environment env-var leakage.** Laravel's Dotenv overrides phpunit.xml's `<env>` block; `CACHE_STORE`, `QUEUE_CONNECTION`, etc. resolve to redis in tests. Two test files work around it by overriding `cache.default` to `array` in setUp. Proper fix is a `.env.testing` file.
+4. **`LoginTest::setUp` clears the wrong rate-limit key** (`login:127.0.0.1` ≠ Laravel's actual key format). Tests pass on a clean Redis but flake when state accumulates. Fixing item 3 makes this go away.
 
 ## Trade-offs
 
@@ -225,11 +224,11 @@ The PDF asks that anything cut for time be described well enough that the thinki
 | ---------------------------------- | ----- | ---------------------------------------------------------------------------- |
 | Unit — conditions + resolvers      | 53    | Every shipped handler, registry dispatch, unknown-type throws                |
 | Unit — state machine + idempotency | 31    | Every legal/illegal PO transition, subject_hash determinism, middleware      |
-| Feature — engine                   | 28    | Start, conditions, modes, versioning, ad-hoc, cancel — uses `TestApprovable` |
+| Feature — engine                   | 30    | Start, conditions, modes, versioning, ad-hoc (incl. orphan-prevention), cancel |
 | Feature — scenarios                | 9     | The three PDF scenarios end-to-end via HTTP                                  |
 | Feature — notifications            | 6     | Step-assigned, approval/rejection, ShouldQueueAfterCommit contract           |
 | Feature — auth                     | 13    | Login, refresh, logout (blacklisted), me, throttling                         |
-| **Total**                          | **140** | **~3 seconds**                                                             |
+| **Total**                          | **142** | **~4 seconds**                                                             |
 
 Engine tests run against `TestApprovable` (a dedicated test model), never `PurchaseOrder`. The polymorphism is proven by the test suite, not just claimed.
 

@@ -8,6 +8,7 @@ use App\Domains\Workflow\Approvers\Resolvers\DirectManagerResolver;
 use App\Domains\Workflow\Approvers\Resolvers\RoleResolver;
 use App\Domains\Workflow\Enums\ActionType;
 use App\Domains\Workflow\Enums\ProcessStatus;
+use App\Domains\Workflow\Enums\StepInstanceStatus;
 use App\Domains\Workflow\Models\ApprovalStepInstance;
 use Illuminate\Support\Str;
 use Tests\Support\EngineTestCase;
@@ -42,7 +43,10 @@ class ConditionEvaluationTest extends EngineTestCase
         );
 
         $this->assertSame(ProcessStatus::Approved, $process->fresh()->status);
-        $this->assertCount(1, ApprovalStepInstance::where('approval_process_id', $process->id)->get());
+        $instances = ApprovalStepInstance::where('approval_process_id', $process->id)->get();
+        $byStatus = $instances->groupBy(fn ($i) => $i->status->value);
+        $this->assertCount(1, $byStatus->get('approved', collect()));
+        $this->assertCount(1, $byStatus->get('skipped', collect()));
     }
 
     public function test_step_with_passing_condition_is_entered(): void
@@ -95,7 +99,12 @@ class ConditionEvaluationTest extends EngineTestCase
         $process = $this->engine->start($subject);
 
         $this->assertSame(ProcessStatus::Approved, $process->fresh()->status);
-        $this->assertCount(0, ApprovalStepInstance::where('approval_process_id', $process->id)->get());
+        $this->assertCount(
+            0,
+            ApprovalStepInstance::where('approval_process_id', $process->id)
+                ->where('status', StepInstanceStatus::Pending->value)
+                ->get(),
+        );
     }
 
     public function test_field_in_routes_to_branch_when_value_matches(): void
