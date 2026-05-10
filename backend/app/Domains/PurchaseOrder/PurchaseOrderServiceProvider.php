@@ -2,6 +2,7 @@
 
 namespace App\Domains\PurchaseOrder;
 
+use App\Domains\PurchaseOrder\Listeners\NotifyParticipants;
 use App\Domains\PurchaseOrder\Listeners\SyncPurchaseOrderStatus;
 use App\Domains\PurchaseOrder\Models\PurchaseOrder;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -22,5 +23,6 @@ class PurchaseOrderServiceProvider extends ServiceProvider
         ]);
 
         $events->subscribe(SyncPurchaseOrderStatus::class);
+        $events->subscribe(NotifyParticipants::class);
     }
 }
