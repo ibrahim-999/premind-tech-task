@@ -1,5 +1,9 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { LoginPage } from '@/features/auth/LoginPage'
+import { PurchaseOrderCreatePage } from '@/features/purchase-orders/PurchaseOrderCreatePage'
+import { PurchaseOrderDetailPage } from '@/features/purchase-orders/PurchaseOrderDetailPage'
+import { PurchaseOrderEditPage } from '@/features/purchase-orders/PurchaseOrderEditPage'
+import { PurchaseOrderListPage } from '@/features/purchase-orders/PurchaseOrderListPage'
 import { AppLayout } from './AppLayout'
 import { RequireAdmin, RequireAuth } from './guards'
 
@@ -26,9 +30,10 @@ export function AppRoutes() {
       >
         <Route path="/" element={<Navigate to="/inbox" replace />} />
         <Route path="/inbox" element={<PlaceholderPage title="Inbox" />} />
-        <Route path="/purchase-orders" element={<PlaceholderPage title="Purchase Orders" />} />
-        <Route path="/purchase-orders/new" element={<PlaceholderPage title="Create Purchase Order" />} />
-        <Route path="/purchase-orders/:id" element={<PlaceholderPage title="Purchase Order Detail" />} />
+        <Route path="/purchase-orders" element={<PurchaseOrderListPage />} />
+        <Route path="/purchase-orders/new" element={<PurchaseOrderCreatePage />} />
+        <Route path="/purchase-orders/:id" element={<PurchaseOrderDetailPage />} />
+        <Route path="/purchase-orders/:id/edit" element={<PurchaseOrderEditPage />} />
         <Route path="/processes/:id" element={<PlaceholderPage title="Process Detail" />} />
         <Route
           path="/admin/workflows"
