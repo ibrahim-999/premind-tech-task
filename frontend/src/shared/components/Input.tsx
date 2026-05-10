@@ -1,0 +1,39 @@
+import { forwardRef, type InputHTMLAttributes, type TextareaHTMLAttributes } from 'react'
+import { cn } from '@/shared/utils/cn'
+
+const baseClasses =
+  'block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 disabled:bg-gray-50 disabled:text-gray-500'
+
+export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement>>(
+  function Input({ className, ...props }, ref) {
+    return <input ref={ref} className={cn(baseClasses, className)} {...props} />
+  },
+)
+
+export const Textarea = forwardRef<
+  HTMLTextAreaElement,
+  TextareaHTMLAttributes<HTMLTextAreaElement>
+>(function Textarea({ className, ...props }, ref) {
+  return <textarea ref={ref} className={cn(baseClasses, 'min-h-[80px]', className)} {...props} />
+})
+
+interface FieldProps {
+  label: string
+  error?: string
+  htmlFor?: string
+  children: React.ReactNode
+}
+
+export function Field({ label, error, htmlFor, children }: FieldProps) {
+  return (
+    <div className="space-y-1">
+      <label htmlFor={htmlFor} className="block text-sm font-medium text-gray-700">
+        {label}
+      </label>
+      {children}
+      {error !== undefined && error !== '' ? (
+        <p className="text-xs text-red-600">{error}</p>
+      ) : null}
+    </div>
+  )
+}
