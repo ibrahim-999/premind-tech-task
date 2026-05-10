@@ -1,8 +1,8 @@
-FROM node:20-alpine
+FROM node:22-alpine
 
 RUN apk add --no-cache git openssl bash
 
-RUN corepack enable && corepack prepare pnpm@latest --activate
+RUN corepack enable && corepack prepare pnpm@10.15.0 --activate
 
 WORKDIR /app
 

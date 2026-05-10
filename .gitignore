@@ -41,8 +41,13 @@ backend/Homestead.json
 backend/Homestead.yaml
 backend/.fleet
 backend/.zed
+backend/_ide_helper.php
+backend/_ide_helper_models.php
+backend/.phpstorm.meta.php
+backend/.phpactor.json
 
 frontend/node_modules/
+frontend/.pnpm-store/
 frontend/dist/
 frontend/dist-ssr/
 frontend/build/
@@ -50,8 +55,11 @@ frontend/.vite/
 frontend/coverage/
 frontend/.eslintcache
 frontend/*.local
+frontend/stats.html
+*.tsbuildinfo
 frontend/playwright-report/
 frontend/test-results/
+frontend/playwright/.cache/
 
 docker/certs/*.crt
 docker/certs/*.key
@@ -69,3 +77,8 @@ pnpm-debug.log*
 *.seed
 *.tgz
 *.tar.gz
+
+.turbo/
+.cache/
+*.bak
+*.orig

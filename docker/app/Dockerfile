@@ -1,4 +1,4 @@
-FROM php:8.3-fpm
+FROM php:8.4-fpm
 
 ARG DOCKER_UID=1000
 ARG DOCKER_GID=1000
