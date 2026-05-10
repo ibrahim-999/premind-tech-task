@@ -41,9 +41,29 @@ class WorkflowSeeder extends Seeder
             'config' => [],
         ]);
 
-        $financeStep = WorkflowStep::create([
+        $procurementStep = WorkflowStep::create([
             'workflow_version_id' => $version->id,
             'order' => 2,
+            'name' => 'Procurement Review',
+            'approval_mode' => 'parallel_any',
+            'required_approvals' => 1,
+        ]);
+        $procurementStep->conditions()->create([
+            'type' => 'field_eq',
+            'config' => ['field' => 'category', 'value' => 'IT'],
+        ]);
+        $procurementStep->approvers()->create([
+            'resolver_type' => 'role',
+            'config' => ['role' => 'cto'],
+        ]);
+        $procurementStep->approvers()->create([
+            'resolver_type' => 'role',
+            'config' => ['role' => 'cfo'],
+        ]);
+
+        $financeStep = WorkflowStep::create([
+            'workflow_version_id' => $version->id,
+            'order' => 3,
             'name' => 'Finance Head Approval',
             'approval_mode' => 'single',
             'required_approvals' => 1,

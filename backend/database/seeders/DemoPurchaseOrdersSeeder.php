@@ -22,14 +22,20 @@ class DemoPurchaseOrdersSeeder extends Seeder
 
         $this->createSubmittedPO(
             $ali,
-            ['title' => '2x MacBook Pro 16"', 'category' => 'IT'],
-            [['name' => 'MacBook Pro 16"', 'quantity' => 2, 'unit_price' => 4000]],
+            ['title' => 'Office Renovation', 'category' => 'Operations'],
+            [['name' => 'Standing desks', 'quantity' => 4, 'unit_price' => 2000]],
         );
 
         $this->createSubmittedPO(
             $omar,
             ['title' => 'Office Printer', 'category' => 'IT'],
             [['name' => 'Brother MFC L8900', 'quantity' => 1, 'unit_price' => 1500]],
+        );
+
+        $this->createSubmittedPO(
+            $ali,
+            ['title' => '2x MacBook Pro 16"', 'category' => 'IT'],
+            [['name' => 'MacBook Pro 16"', 'quantity' => 2, 'unit_price' => 4000]],
         );
     }
 
