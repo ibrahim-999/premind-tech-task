@@ -2,9 +2,11 @@
 
 use App\Exceptions\ApiExceptionRenderer;
 use App\Http\Middleware\ForceJsonResponse;
+use App\Http\Middleware\Idempotency;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use PHPOpenSourceSaver\JWTAuth\Http\Middleware\Authenticate;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -18,7 +20,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->throttleApi();
         $middleware->api(prepend: [ForceJsonResponse::class]);
         $middleware->alias([
-            'jwt.auth' => \PHPOpenSourceSaver\JWTAuth\Http\Middleware\Authenticate::class,
+            'jwt.auth' => Authenticate::class,
+            'idempotent' => Idempotency::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
